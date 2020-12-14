@@ -1,0 +1,6 @@
+streamlit
+opencv-python
+googletrans
+easyocr
+pandas
+numpy
