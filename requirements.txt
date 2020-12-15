@@ -4,4 +4,4 @@ easyocr
 xpinyin
 numpy
 langid
-opencv-python--headless
+opencv-python
