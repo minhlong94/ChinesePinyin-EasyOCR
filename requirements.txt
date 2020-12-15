@@ -6,3 +6,4 @@ numpy
 langid
 opencv-python
 pyyaml
+Pillow
