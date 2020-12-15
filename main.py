@@ -1,25 +1,26 @@
 import cv2
 import easyocr
-import pandas as pd
 import streamlit as st
 import numpy as np
-import pinyin
-import googletrans
+import xpinyin
+import langid
+from langid.langid import LanguageIdentifier, model
 
-st.title("Image Character Translator")
+langid.set_languages(["zh"])
+identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+THRESHOLD = 0.8
+st.title("Chinese to Pinyin")
 st.info("This is a small project I made to translate "
-        "Chinese character to its Pinyin, though later "
-        "I decided to do translator as well.")
-languages_df = pd.read_csv("languages.csv")
-list_languages = languages_df["Language"] + "-" + languages_df["CodeName"]
-OPTIONS = ["Chinese to Pinyin", "Translator"]
+        "Chinese character to its Pinyin.")
+st.warning("Due to limited hardware resource, detecting and translation take time.")
+upload_file = st.file_uploader("Upload an image")
 
-option = st.selectbox("Choose your options", OPTIONS)
-if option == "Chinese to Pinyin":
-    upload_file = st.file_uploader("Upload an image")
-    if upload_file is not None:
-        image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)
-        version = st.selectbox("Simplified or Traditional?", ["Simplified", "Traditional"])
+if upload_file is not None:
+    image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)
+    st.image(image, caption="Review your input image")
+    version = st.selectbox("Simplified or Traditional?", ["Simplified", "Traditional"])
+    button = st.button("Get Pinyin!")
+    if button:
         if version == "Simplified":
             reader = easyocr.Reader(["ch_sim"])
             result = reader.readtext(image)
@@ -29,28 +30,27 @@ if option == "Chinese to Pinyin":
 
         texts = []
         confidences = []
+        pinyins = []
         for (bounding_box, text, confidence) in result:
-            (tl, tr, br, bl) = bounding_box
-            tl = (int(tl[0]), int(tl[1]))
-            tr = (int(tr[0]), int(tr[1]))
-            br = (int(br[0]), int(br[1]))
-            bl = (int(bl[0]), int(bl[1]))
-            cv2.rectangle(image, tl, br, (0, 255, 0), 2)
-            cv2.putText(image, pinyin.get(text, format="numerical"), (tl[0], tl[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-            texts.append(text)
-            confidences.append(confidence)
+            detect_chinese = identifier.classify(text)
+            if detect_chinese[1] > THRESHOLD:
+                st.write(detect_chinese[1])
+                (tl, tr, br, bl) = bounding_box
+                tl = (int(tl[0]), int(tl[1]))
+                tr = (int(tr[0]), int(tr[1]))
+                br = (int(br[0]), int(br[1]))
+                bl = (int(bl[0]), int(bl[1]))
+                cv2.rectangle(image, tl, br, (0, 255, 0), 2)
+
+                pinyin = xpinyin.Pinyin().get_pinyin(text, tone_marks='numbers', splitter=" ")
+                pinyins.append(pinyin)
+                cv2.putText(image, pinyin, (bl[0], bl[1] + 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+                texts.append(text)
+                confidences.append(confidence)
+            else:
+                continue
         st.image(image)
-        st.write(pinyin.get(texts, format="numerical"))
-        st.write(confidences)
-    else:
-        st.exception("Invalid file")
-elif option == "Translator":
-    upload_file = st.file_uploader("Upload an image")
-    if upload_file is not None:
-        cv2.imread(upload_file)
-        orig_languages = st.multiselect("Please select original language", list_languages)
-        dest_languages = st.multiselect("Please select destination language", list_languages)
-        reader = easyocr.Reader([orig_languages])
-    else:
-        st.exception("Invalid file")
+        st.write(pinyins)
+        st.write(texts)
+
