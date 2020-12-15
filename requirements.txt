@@ -2,7 +2,7 @@ streamlit
 googletrans
 easyocr
 xpinyin
-numpy
+numpy==1.19.3
 langid
 opencv-python
 pyyaml

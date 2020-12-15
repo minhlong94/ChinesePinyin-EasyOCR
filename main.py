@@ -1,14 +1,14 @@
 import cv2
 import easyocr
-import streamlit as st
-import numpy as np
-import xpinyin
 import langid
+import numpy as np
+import streamlit as st
+import xpinyin
 from PIL import Image
 from langid.langid import LanguageIdentifier, model
 
-langid.set_languages(["zh"])
-identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+langid.set_languages(["zh"])  # Only Chinese
+identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)  # Language identifier
 CHART_IMAGE_PATH = "files/chart.png"
 CHART_IMAGE = Image.open(CHART_IMAGE_PATH).resize((700, 200))
 PINYIN_TRANSLATOR = xpinyin.Pinyin()
@@ -23,11 +23,12 @@ st.warning("Due to limited hardware resource, detecting and translation take tim
 upload_file = st.file_uploader("Upload an image")
 
 if upload_file is not None:
-    image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)
+    image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)  # Read image
     st.image(image, caption="Review your input image")
     version = st.selectbox("Simplified or Traditional?", ["Simplified", "Traditional"])
-    THRESHOLD = st.slider("Choose the confidence interval: ", 0.0, 1.0, 0.8, 0.01)
-    st.info("Only the characters detected above the confidence threshold will be visualized and translated.")
+    THRESHOLD = st.slider("Choose the confidence threshold: ", 0.0, 1.0, 0.8, 0.01)
+    st.info("Only the characters detected with probability above"
+            " the confidence threshold will be visualized and translated.")
     button = st.button("Get Pinyin!")
     if button:
         if version == "Simplified":
@@ -53,7 +54,7 @@ if upload_file is not None:
                 pinyin = PINYIN_TRANSLATOR.get_pinyin(text, tone_marks='numbers', splitter=" ")
                 numeric_pinyin.append(pinyin)
                 cv2.putText(image, pinyin, (bl[0], bl[1] + 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)  # Write text to image
                 texts.append(text)
                 confidences.append(confidence)
             else:
