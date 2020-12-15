@@ -5,3 +5,4 @@ xpinyin
 numpy
 langid
 opencv-python
+pyyaml
