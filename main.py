@@ -19,11 +19,17 @@ markdown = """This is a small project I made to translate Chinese character to i
         The chart of the project is as follows: """
 st.markdown(markdown)
 st.image(CHART_IMAGE)
-st.warning("Due to limited hardware resource, detecting and translation take time.")
+st.warning("Due to limited hardware resource, detecting and translation take time.\n The image is rescaled to 600x600 "
+           "if it is square, and 600x400 if it is not.")
 upload_file = st.file_uploader("Upload an image")
 
 if upload_file is not None:
-    image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)  # Read image
+    image = cv2.imdecode(np.asarray(bytearray(upload_file.read()), dtype=np.uint8), 1)  # Read image\
+    width, height, _ = image.shape
+    if width == height:
+        image = cv2.resize(image, (600, 600))
+    else:
+        image = cv2.resize(image, (600, 400))
     st.image(image, caption="Review your input image")
     version = st.selectbox("Simplified or Traditional?", ["Simplified", "Traditional"])
     THRESHOLD = st.slider("Choose the confidence threshold: ", 0.0, 1.0, 0.8, 0.01)
